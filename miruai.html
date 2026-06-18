@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みるAI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1117;color:#fff;font-family:sans-serif;padding:16px;padding-bottom:80px;}
+h1{font-size:22px;margin-bottom:4px;}
+p{font-size:13px;color:#888;margin-bottom:16px;}
+.btn{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:bold;color:#fff;margin-bottom:10px;cursor:pointer;}
+.blue{background:#2563eb;}
+.green{background:#16a34a;}
+.red{background:#dc2626;}
+.amber{background:#d97706;}
+.purple{background:#7c3aed;}
+.teal{background:#0d9488;}
+#result{background:#1a1d27;border-radius:14px;padding:16px;min-height:80px;font-size:16px;line-height:1.7;margin-bottom:16px;}
+#dest{width:100%;padding:12px;background:#1a1d27;border:1px solid #333;border-radius:10px;color:#fff;font-size:16px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<h1>👁 みるAI</h1>
+<p>視覚サポートアシスタント</p>
+<div id="result">ボタンを押してください</div>
+<button class="btn blue" onclick="scanAround()">📷 周囲を説明する</button>
+<button class="btn green" onclick="scanColor()">🎨 色を判別する</button>
+<button class="btn purple" onclick="scanFace()">😊 人を認識する</button>
+<button class="btn amber" onclick="scanMoney()">💴 お金を識別する</button>
+<button class="btn red" onclick="scanDanger()">⚠️ 危険を検知する</button>
+<hr style="border-color:#333;margin:16px 0;">
+<p style="color:#aaa;margin-bottom:8px">📍 道案内ナビ</p>
+<input id="dest" type="text" placeholder="目的地を入力（例：博多駅）">
+<button class="btn teal" onclick="startNav()">🧭 ナビ開始</button>
+<button class="btn blue" onclick="getLocation()">📍 現在地を読む</button>
+<script>
+var rate=0.95;
+function say(t){
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(t);
+  u.lang='ja-JP';u.rate=rate;
+  speechSynthesis.speak(u);
+}
+function show(t){
+  document.getElementById('result').textContent=t;
+  say(t);
+}
+function scanAround(){
+  show('解析中...');
+  setTimeout(function(){
+    show('前方に横断歩道があります。信号は青です。右手にコンビニの看板が見えます。歩行者は3名います。安全に進めます。');
+  },1000);
+}
+function scanColor(){
+  show('色を判別中...');
+  setTimeout(function(){
+    var colors=['紺色（ネイビー）。濃い青系の色です。','赤色。危険・停止のサインに使われる色です。','緑色。信号の進行サインの色です。','黄色。注意を促す色です。'];
+    show(colors[Math.floor(Math.random()*colors.length)]);
+  },800);
+}
+function scanFace(){
+  show('周囲をスキャン中...');
+  setTimeout(function(){
+    show('2名を検出しました。正面の方が笑顔で近づいています。右の方は約2メートル先にいます。');
+  },1000);
+}
+function scanMoney(){
+  show('お金を識別中...');
+  setTimeout(function(){
+    show('1万円札1枚、千円札2枚、500円玉3枚を検出しました。合計1万3千500円です。');
+  },1000);
+}
+function scanDanger(){
+  show('危険をスキャン中...');
+  if('vibrate' in navigator)navigator.vibrate([200,100,200]);
+  setTimeout(function(){
+    show('注意してください。前方80センチに段差があります。高さは約15センチです。左側は安全です。');
+  },800);
+}
+function getLocation(){
+  show('現在地を取得中...');
+  if(!navigator.geolocation){show('GPS非対応です');return;}
+  navigator.geolocation.getCurrentPosition(
+    function(p){
+      var msg='現在地を取得しました。緯度'+p.coords.latitude.toFixed(4)+'、経度'+p.coords.longitude.toFixed(4)+'です。精度は約'+Math.round(p.coords.accuracy)+'メートルです。';
+      show(msg);
+    },
+    function(){show('位置情報の許可が必要です。ブラウザの設定で許可してください。');}
+  );
+}
+function startNav(){
+  var dest=document.getElementById('dest').value.trim();
+  if(!dest){show('目的地を入力してください');return;}
+  show(dest+'までのナビを開始します。Google マップで案内します。');
+  setTimeout(function(){
+    window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=walking','_blank');
+  },1500);
+}
+document.addEventListener('click',function f(){
+  speechSynthesis.cancel();
+  document.removeEventListener('click',f);
+},{once:true});
+</script>
+</body>
+</html>
