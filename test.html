@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音声テスト</title>
+<style>
+body{background:#111;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:20px;}
+button{width:100%;max-width:320px;padding:24px;font-size:20px;font-weight:bold;border:none;border-radius:16px;cursor:pointer;color:#fff;}
+#log{width:100%;max-width:320px;background:#222;border-radius:12px;padding:16px;font-size:14px;line-height:1.8;color:#aaa;min-height:100px;}
+</style>
+</head>
+<body>
+<div id="log">ここに結果が表示されます</div>
+<button style="background:#2563eb" onclick="testVoice()">🔊 音声テスト</button>
+<button style="background:#16a34a" onclick="testGPS()">📍 GPSテスト</button>
+<button style="background:#dc2626" onclick="testVibrate()">📳 振動テスト</button>
+<script>
+function log(m){document.getElementById('log').innerHTML+=m+'<br>';}
+function testVoice(){
+log('音声テスト...');
+if(!('speechSynthesis' in window)){log('❌ 非対応');return;}
+var u=new SpeechSynthesisUtterance('テストです。聞こえますか？');
+u.lang='ja-JP';
+u.onstart=function(){log('✅ 再生中');};
+u.onend=function(){log('✅ 完了');};
+u.onerror=function(e){log('❌ エラー:'+e.error);};
+speechSynthesis.speak(u);
+}
+function testGPS(){
+log('GPSテスト...');
+if(!navigator.geolocation){log('❌ 非対応');return;}
+navigator.geolocation.getCurrentPosition(
+function(p){log('✅ 緯度:'+p.coords.latitude.toFixed(4)+' 経度:'+p.coords.longitude.toFixed(4));},
+function(e){log('❌ エラー:'+['','許可拒否','取得失敗','タイムアウト'][e.code]);},
+{enableHighAccuracy:true,timeout:10000}
+);
+}
+function testVibrate(){
+if('vibrate' in navigator){navigator.vibrate([300,100,300]);log('✅ 振動しましたか？');}
+else{log('❌ 非対応');}
+}
+log('読み込み完了✅');
+</script>
+</body>
+</html>
