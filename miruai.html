@@ -7,101 +7,164 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0f1117;color:#fff;font-family:sans-serif;padding:16px;padding-bottom:80px;}
-h1{font-size:22px;margin-bottom:4px;}
-p{font-size:13px;color:#888;margin-bottom:16px;}
-.btn{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:bold;color:#fff;margin-bottom:10px;cursor:pointer;}
+h1{font-size:24px;margin-bottom:4px;}
+p.sub{font-size:13px;color:#888;margin-bottom:16px;}
+.btn{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:bold;color:#fff;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:center;}
 .blue{background:#2563eb;}
 .green{background:#16a34a;}
 .red{background:#dc2626;}
 .amber{background:#d97706;}
 .purple{background:#7c3aed;}
 .teal{background:#0d9488;}
-#result{background:#1a1d27;border-radius:14px;padding:16px;min-height:80px;font-size:16px;line-height:1.7;margin-bottom:16px;}
-#dest{width:100%;padding:12px;background:#1a1d27;border:1px solid #333;border-radius:10px;color:#fff;font-size:16px;margin-bottom:10px;}
+.gray{background:#374151;}
+#result{background:#1a1d27;border-radius:14px;padding:16px;min-height:80px;font-size:16px;line-height:1.8;margin-bottom:16px;border:1px solid #333;}
+#dest{width:100%;padding:14px;background:#1a1d27;border:1px solid #333;border-radius:10px;color:#fff;font-size:16px;margin-bottom:10px;}
+#api-key{width:100%;padding:14px;background:#1a1d27;border:1px solid #555;border-radius:10px;color:#fff;font-size:14px;margin-bottom:10px;}
+.section{margin-top:20px;padding-top:16px;border-top:1px solid #333;}
+.section-title{font-size:13px;color:#888;margin-bottom:10px;}
+#loading{display:none;text-align:center;padding:10px;color:#4f8ef7;}
+#camera-preview{display:none;width:100%;border-radius:10px;margin-bottom:10px;}
 </style>
 </head>
 <body>
+
 <h1>👁 みるAI</h1>
-<p>視覚サポートアシスタント</p>
+<p class="sub">視覚サポートアシスタント</p>
+
 <div id="result">ボタンを押してください</div>
-<button class="btn blue" onclick="scanAround()">📷 周囲を説明する</button>
-<button class="btn green" onclick="scanColor()">🎨 色を判別する</button>
-<button class="btn purple" onclick="scanFace()">😊 人を認識する</button>
-<button class="btn amber" onclick="scanMoney()">💴 お金を識別する</button>
-<button class="btn red" onclick="scanDanger()">⚠️ 危険を検知する</button>
-<hr style="border-color:#333;margin:16px 0;">
-<p style="color:#aaa;margin-bottom:8px">📍 道案内ナビ</p>
-<input id="dest" type="text" placeholder="目的地を入力（例：博多駅）">
-<button class="btn teal" onclick="startNav()">🧭 ナビ開始</button>
-<button class="btn blue" onclick="getLocation()">📍 現在地を読む</button>
+<div id="loading">🔄 AIが解析中…</div>
+
+<button class="btn blue" onclick="captureAndAnalyze('周囲の状況を詳しく日本語で説明してください。障害物、人、信号、看板など安全に関わる情報を優先してください。')">📷 周囲を説明する</button>
+<button class="btn green" onclick="captureAndAnalyze('この画像に写っている物や場所の色を日本語で説明してください。')">🎨 色を判別する</button>
+<button class="btn purple" onclick="captureAndAnalyze('この画像に写っている人の数、表情、距離感を日本語で説明してください。')">😊 人を認識する</button>
+<button class="btn amber" onclick="captureAndAnalyze('この画像に写っているお金（紙幣・硬貨）の種類と枚数を数えて合計金額を日本語で教えてください。')">💴 お金を識別する</button>
+<button class="btn red" onclick="captureAndAnalyze('この画像に写っている危険な場所（段差、障害物、濡れた床など）を日本語で警告してください。')">⚠️ 危険を検知する</button>
+<button class="btn gray" onclick="captureAndAnalyze('この画像に写っている文字をすべて読み上げてください。')">📄 文字を読む</button>
+
+<div class="section">
+  <div class="section-title">📍 道案内ナビ</div>
+  <input id="dest" type="text" placeholder="目的地を入力（例：博多駅）">
+  <button class="btn teal" onclick="startNav()">🧭 Google マップで案内</button>
+  <button class="btn blue" onclick="getLocation()">📍 現在地を読む</button>
+</div>
+
+<div class="section">
+  <div class="section-title">⚙️ API設定</div>
+  <input id="api-key" type="password" placeholder="APIキーを入力（sk-ant-...）">
+  <button class="btn gray" onclick="saveKey()">💾 APIキーを保存</button>
+</div>
+
+<video id="camera-preview" autoplay playsinline></video>
+
 <script>
-var rate=0.95;
+var API_KEY = localStorage.getItem('miruai_key') || '';
+if(API_KEY) document.getElementById('api-key').value = '保存済み';
+
+function saveKey(){
+  var k = document.getElementById('api-key').value.trim();
+  if(k.startsWith('sk-ant')){
+    localStorage.setItem('miruai_key', k);
+    API_KEY = k;
+    show('✅ APIキーを保存しました！');
+  } else {
+    show('❌ APIキーが正しくありません。sk-ant-で始まるキーを入力してください。');
+  }
+}
+
 function say(t){
-  if(!('speechSynthesis' in window))return;
+  if(!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
-  var u=new SpeechSynthesisUtterance(t);
-  u.lang='ja-JP';u.rate=rate;
+  var u = new SpeechSynthesisUtterance(t);
+  u.lang = 'ja-JP'; u.rate = 0.95;
   speechSynthesis.speak(u);
 }
+
 function show(t){
-  document.getElementById('result').textContent=t;
+  document.getElementById('result').textContent = t;
+  document.getElementById('loading').style.display = 'none';
   say(t);
 }
-function scanAround(){
-  show('解析中...');
-  setTimeout(function(){
-    show('前方に横断歩道があります。信号は青です。右手にコンビニの看板が見えます。歩行者は3名います。安全に進めます。');
-  },1000);
+
+function showLoading(){
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').textContent = 'AIが解析中...';
 }
-function scanColor(){
-  show('色を判別中...');
-  setTimeout(function(){
-    var colors=['紺色（ネイビー）。濃い青系の色です。','赤色。危険・停止のサインに使われる色です。','緑色。信号の進行サインの色です。','黄色。注意を促す色です。'];
-    show(colors[Math.floor(Math.random()*colors.length)]);
-  },800);
+
+async function captureAndAnalyze(prompt){
+  API_KEY = localStorage.getItem('miruai_key') || '';
+  if(!API_KEY){
+    show('❌ まずAPIキーを設定してください。画面下の「API設定」にAPIキーを入力して保存してください。');
+    return;
+  }
+  showLoading();
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    var video = document.getElementById('camera-preview');
+    video.style.display = 'block';
+    video.srcObject = stream;
+    await new Promise(r => setTimeout(r, 1500));
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    var base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    stream.getTracks().forEach(t => t.stop());
+    video.style.display = 'none';
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            {type: 'image', source: {type: 'base64', media_type: 'image/jpeg', data: base64}},
+            {type: 'text', text: prompt}
+          ]
+        }]
+      })
+    });
+    var data = await res.json();
+    if(data.content && data.content[0]){
+      show(data.content[0].text);
+    } else {
+      show('❌ エラー: ' + JSON.stringify(data));
+    }
+  } catch(e) {
+    show('❌ エラー: ' + e.message);
+  }
 }
-function scanFace(){
-  show('周囲をスキャン中...');
-  setTimeout(function(){
-    show('2名を検出しました。正面の方が笑顔で近づいています。右の方は約2メートル先にいます。');
-  },1000);
-}
-function scanMoney(){
-  show('お金を識別中...');
-  setTimeout(function(){
-    show('1万円札1枚、千円札2枚、500円玉3枚を検出しました。合計1万3千500円です。');
-  },1000);
-}
-function scanDanger(){
-  show('危険をスキャン中...');
-  if('vibrate' in navigator)navigator.vibrate([200,100,200]);
-  setTimeout(function(){
-    show('注意してください。前方80センチに段差があります。高さは約15センチです。左側は安全です。');
-  },800);
-}
+
 function getLocation(){
   show('現在地を取得中...');
   if(!navigator.geolocation){show('GPS非対応です');return;}
   navigator.geolocation.getCurrentPosition(
     function(p){
-      var msg='現在地を取得しました。緯度'+p.coords.latitude.toFixed(4)+'、経度'+p.coords.longitude.toFixed(4)+'です。精度は約'+Math.round(p.coords.accuracy)+'メートルです。';
+      var msg = '現在地を取得しました。緯度'+p.coords.latitude.toFixed(4)+'、経度'+p.coords.longitude.toFixed(4)+'です。精度は約'+Math.round(p.coords.accuracy)+'メートルです。';
       show(msg);
     },
-    function(){show('位置情報の許可が必要です。ブラウザの設定で許可してください。');}
+    function(){ show('位置情報の許可が必要です。'); }
   );
 }
+
 function startNav(){
-  var dest=document.getElementById('dest').value.trim();
+  var dest = document.getElementById('dest').value.trim();
   if(!dest){show('目的地を入力してください');return;}
-  show(dest+'までのナビを開始します。Google マップで案内します。');
+  show(dest + 'までGoogle マップで案内します。');
   setTimeout(function(){
     window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=walking','_blank');
-  },1500);
+  }, 1000);
 }
-document.addEventListener('click',function f(){
+
+document.addEventListener('click', function f(){
   speechSynthesis.cancel();
-  document.removeEventListener('click',f);
-},{once:true});
+  document.removeEventListener('click', f);
+}, {once:true});
 </script>
 </body>
 </html>
