@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no">
+<title>みるAI — 視覚サポートアシスタント</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f2ff;
+    --text2: rgba(240,242,255,0.55);
+    --text3: rgba(240,242,255,0.3);
+    --accent: #4f8ef7;
+    --accent-bg: rgba(79,142,247,0.12);
+    --green: #34d399;
+    --green-bg: rgba(52,211,153,0.1);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,0.1);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167,139,250,0.1);
+    --teal: #2dd4bf;
+    --teal-bg: rgba(45,212,191,0.1);
+    --radius: 14px;
+    --radius-sm: 9px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    min-height: 100vh;
+    max-width: 420px;
+    margin: 0 auto;
+    padding-bottom: 100px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 36px; height: 36px; background: var(--accent-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.8)} }
+  .status-label { font-size: 11px; color: var(--green); display: flex; align-items: center; gap: 5px; }
+
+  /* Hero button */
+  .hero { padding: 20px; }
+  .hero-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hero-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .hero-icon { font-size: 32px; flex-shrink: 0; }
+  .hero-label { font-size: 18px; font-weight: 700; text-align: left; }
+  .hero-sub { font-size: 12px; opacity: 0.8; margin-top: 3px; text-align: left; }
+
+  /* Result area */
+  .result-wrap { padding: 0 20px 4px; }
+  .result-box {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    min-height: 64px;
+    transition: all 0.3s;
+  }
+  .result-box.active { border-color: rgba(79,142,247,0.4); background: var(--accent-bg); }
+  .result-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .result-text { font-size: 15px; color: var(--text); line-height: 1.65; }
+  .result-text.muted { color: var(--text2); }
+  .speak-btn {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 10px; padding: 7px 12px;
+    background: transparent; border: 0.5px solid var(--border);
+    border-radius: 99px; color: var(--text2); font-size: 12px;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .speak-btn:hover { background: var(--surface2); }
+
+  /* Section */
+  .section-title {
+    padding: 18px 20px 8px;
+    font-size: 12px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Feature grid */
+  .feat-grid { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .feat-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s;
+  }
+  .feat-card.active { border-color: rgba(255,255,255,0.2); }
+  .feat-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+  }
+  .feat-icon-wrap {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .feat-name { font-size: 15px; font-weight: 600; }
+  .feat-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .feat-chevron { margin-left: auto; font-size: 16px; color: var(--text3); transition: transform 0.2s; flex-shrink: 0; }
+  .feat-card.active .feat-chevron { transform: rotate(90deg); }
+  .feat-body {
+    display: none; padding: 0 16px 14px; border-top: 0.5px solid var(--border);
+  }
+  .feat-card.active .feat-body { display: block; }
+  .feat-body-inner { padding-top: 12px; }
+
+  /* Buttons inside features */
+  .action-btn {
+    width: 100%; padding: 11px;
+    background: var(--surface2); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: inherit; display: flex; align-items: center;
+    justify-content: center; gap: 7px; margin-top: 10px;
+    transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+  }
+  .action-btn:active { opacity: 0.8; }
+  .action-btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-row { display: flex; gap: 6px; margin-top: 8px; }
+  .btn-row .action-btn { flex: 1; margin-top: 0; font-size: 12px; }
+
+  /* Nav feature */
+  .nav-steps { display: flex; flex-direction: column; gap: 6px; }
+  .nav-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-sm);
+    background: var(--surface2); font-size: 13px;
+  }
+  .step-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .step-text { color: var(--text2); line-height: 1.5; }
+  .step-text.active-step { color: var(--text); }
+
+  /* Color swatches */
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .swatch { width: 36px; height: 36px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.1s; }
+  .swatch:active { transform: scale(0.92); }
+  .swatch.sel { border-color: #fff; }
+  .color-result { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .color-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+  .color-detail { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+  /* Person cards */
+  .person-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .person-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+  .p-avatar { width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .p-emotion { font-size: 13px; font-weight: 500; }
+  .p-dist { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Money */
+  .money-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .money-item { display: flex; align-items: center; gap: 10px; }
+  .bill-label { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; min-width: 52px; text-align: center; }
+  .bill-count { font-size: 12px; color: var(--text2); }
+  .money-total-row { border-top: 0.5px solid var(--border); padding-top: 10px; display: flex; align-items: baseline; gap: 8px; }
+  .money-total-label { font-size: 12px; color: var(--text2); }
+  .money-total-val { font-size: 24px; font-weight: 700; }
+
+  /* Danger */
+  .danger-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .danger-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); }
+  .danger-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .danger-text { font-size: 13px; line-height: 1.5; }
+  .monitor-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 12px; margin-top: 8px;
+    background: var(--green-bg); color: var(--green);
+  }
+  .monitor-badge.off { background: var(--surface2); color: var(--text3); }
+
+  /* Braille */
+  .braille-display { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; margin-bottom: 10px; align-items: center; }
+  .b-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .b-row { display: flex; gap: 3px; }
+  .b-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .b-dot.on { background: var(--accent); }
+  .b-dot.off { background: rgba(255,255,255,0.1); }
+  .b-lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .braille-input { width: 100%; padding: 10px 12px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  .braille-input:focus { outline: none; border-color: var(--accent); }
+  .braille-input::placeholder { color: var(--text3); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 420px;
+    background: var(--surface); border-top: 0.5px solid var(--border);
+    display: flex; padding: 10px 0 20px;
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nav-item-icon { font-size: 22px; color: var(--text3); transition: color 0.15s; }
+  .nav-item-label { font-size: 10px; color: var(--text3); transition: color 0.15s; }
+  .nav-item.active .nav-item-icon { color: var(--accent); }
+  .nav-item.active .nav-item-label { color: var(--accent); }
+
+  /* Listening animation */
+  .listening { display: none; align-items: center; gap: 8px; padding: 8px 12px; background: var(--accent-bg); border-radius: var(--radius-sm); margin-top: 8px; }
+  .listening.show { display: flex; }
+  .wave { display: flex; gap: 2px; align-items: center; height: 18px; }
+  .wave span { display: block; width: 3px; background: var(--accent); border-radius: 2px; animation: wave 0.7s ease-in-out infinite; }
+  .wave span:nth-child(2){animation-delay:.1s}
+  .wave span:nth-child(3){animation-delay:.2s}
+  .wave span:nth-child(4){animation-delay:.3s}
+  @keyframes wave{0%,100%{height:4px}50%{height:14px}}
+  .listening-text { font-size: 12px; color: var(--accent); }
+
+  .pulse { animation: pulse-anim 1.4s ease-in-out infinite; }
+  @keyframes pulse-anim{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* TalkBack・アクセシビリティ対応 */
+  :focus { outline: 3px solid var(--accent) !important; outline-offset: 2px !important; }
+  .action-btn, .hero-btn, .feat-header { min-height: 48px; }
+  .action-btn { font-size: 15px !important; padding: 13px !important; }
+  .feat-name { font-size: 16px !important; }
+  .feat-desc { font-size: 13px !important; }
+  .result-text { font-size: 16px !important; line-height: 1.8 !important; }
+  /* 読み上げ専用テキスト（視覚的に非表示だがTalkBackが読む） */
+  .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
+  /* 大きいボタンモード */
+  body.large-mode .action-btn { font-size: 18px !important; padding: 16px !important; min-height: 56px !important; }
+  body.large-mode .feat-name { font-size: 20px !important; }
+  body.large-mode .result-text { font-size: 20px !important; }
+  body.large-mode .hero-label { font-size: 22px !important; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">👁️</div>
+      <div>
+        <div class="logo-text">みるAI</div>
+        <div class="logo-sub">視覚サポートアシスタント</div>
+      </div>
+    </div>
+    <div class="status-label"><div class="status-dot"></div>AI 準備完了</div>
+  </div>
+</div>
+
+<div id="panel-home">
+<div class="hero">
+  <button class="hero-btn" onclick="heroScan()" aria-label="周囲を説明する。タップしてAIが状況を説明します" role="button">
+    <div class="hero-icon">📷</div>
+    <div>
+      <div class="hero-label">周囲を説明する</div>
+      <div class="hero-sub">タップしてAIが周囲の状況を音声で説明します</div>
+    </div>
+  </button>
+</div>
+
+<div class="result-wrap">
+  <div class="result-box" id="main-result" aria-live="polite" aria-label="AIの説明">
+    <div class="result-label">AI の説明</div>
+    <div class="result-text muted" id="main-text">機能を使うと、ここに説明が表示されます。</div>
+  </div>
+  <div class="listening" id="listening">
+    <div class="wave"><span></span><span></span><span></span><span></span></div>
+    <div class="listening-text">AI が解析中…</div>
+  </div>
+</div>
+
+<div class="section-title">サポート機能</div>
+
+<div class="feat-grid">
+
+  <!-- 道案内 -->
+  <div class="feat-card" id="card-nav" onclick="toggleCard('nav')" role="button" aria-expanded="false" aria-label="道案内ナビ機能">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--accent-bg)">🗺️</div>
+      <div><div class="feat-name">道案内・ナビ</div><div class="feat-desc">GPS＋音声で目的地まで誘導</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">目的地を入力</div>
+          <div style="display:flex;gap:6px">
+            <input id="nav-dest" type="text" placeholder="例：博多駅、市役所…" aria-label="目的地を入力してください"
+              style="flex:1;padding:9px 12px;background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:inherit;outline:none"
+              onclick="event.stopPropagation()">
+            <button class="action-btn primary" onclick="startGpsNav(event)" style="width:auto;padding:9px 14px;margin-top:0;flex-shrink:0">🧭 開始</button>
+          </div>
+        </div>
+        <div id="gps-status" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--text2)">
+          📍 現在地：未取得（ナビ開始で自動取得）
+        </div>
+        <div id="nav-direction-box" style="display:none;background:var(--accent-bg);border:0.5px solid rgba(79,142,247,0.3);border-radius:var(--radius-sm);padding:14px 12px;margin-bottom:10px;text-align:center">
+          <div id="nav-arrow" style="font-size:48px;margin-bottom:6px">⬆️</div>
+          <div id="nav-distance" style="font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px">－</div>
+          <div id="nav-instruction" style="font-size:13px;color:var(--text2)">目的地まで案内中</div>
+        </div>
+        <div id="nav-route-info" style="display:none;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">ルート情報</div>
+          <div id="nav-route-text" style="font-size:13px;color:var(--text2);line-height:1.6"></div>
+        </div>
+        <div class="btn-row">
+          <button class="action-btn" onclick="speakCurrentLocation(event)">📍 現在地読み上げ</button>
+          <button class="action-btn" id="nav-stop-btn" onclick="stopGpsNav(event)" style="display:none;color:var(--red)">⏹ 停止</button>
+          <button class="action-btn" onclick="openGoogleMaps(event)">🗺 地図を開く</button>
+        </div>
+        <div id="maps-link-box" style="display:none;margin-top:8px">
+          <a id="maps-link" href="#" target="_blank" onclick="event.stopPropagation()"
+            style="display:block;text-align:center;padding:10px;background:var(--green-bg);border-radius:var(--radius-sm);color:var(--green);font-size:13px;text-decoration:none">
+            🗺 Google マップで開く ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 色を判別 -->
+  <div class="feat-card" id="card-color" onclick="toggleCard('color')">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--teal-bg)">🎨</div>
+      <div><div class="feat-name">色を判別</div><div class="feat-desc">服・信号・物体の色をAIが識別</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <div class="swatches">
+          <div class="swatch sel" style="background:#1e3a8a" onclick="pickColor(event,this,'紺色（ネイビー）','濃い青系の色。スーツやジャケットに多い定番色です。')"></div>
+          <div class="swatch" style="background:#dc2626" onclick="pickColor(event,this,'赤色','鮮やかな赤。危険・停止のサインに使われる色です。')"></div>
+          <div class="swatch" style="background:#16a34a" onclick="pickColor(event,this,'緑色','中明度の緑。信号の進行サインの色です。')"></div>
+          <div class="swatch" style="background:#ca8a04" onclick="pickColor(event,this,'黄色（イエロー）','注意を促す明るい黄色。注意・警告のサインに使われます。')"></div>
+          <div class="swatch" style="background:#7c3aed" onclick="pickColor(event,this,'紫色','中明度の紫。落ち着いた印象の色です。')"></div>
+          <div class="swatch" style="background:#f97316" onclick="pickColor(event,this,'オレンジ色','温かみのある橙色。注意喚起や工事現場の標識に多い色。')"></div>
+        </div>
+        <div class="color-result" id="color-result">
+          <div class="color-name" id="color-name">紺色（ネイビー）</div>
+          <div class="color-detail" id="color-detail">濃い青系の色。スーツやジャケットに多い定番色です。</div>
+        </div>
+        <button class="action-btn primary" onclick="scanColor(event)">📷 カメラで色を判定</button>
+        <button class="action-btn" onclick="speakColor(event)">🔊 色を読み上げる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 人を認識 -->
+  <div class="feat-card" id="card-face" onclick="toggleCard('face')">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--purple-bg)">😊</div>
+      <div><div class="feat-name">人を認識</div><div class="feat-desc">人数・表情・距離をリアルタイムで把握</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <div class="person-grid" id="person-grid">
+          <div class="person-card"><div class="p-avatar" style="background:var(--accent-bg)">😊</div><div class="p-emotion">笑顔</div><div class="p-dist">正面・約1m</div></div>
+          <div class="person-card"><div class="p-avatar" style="background:var(--surface)">😐</div><div class="p-emotion">無表情</div><div class="p-dist">右・約2m</div></div>
+        </div>
+        <div class="color-result" id="face-result">
+          <div class="color-detail">2名を検出。正面の方が笑顔で近づいています。</div>
+        </div>
+        <button class="action-btn primary" onclick="scanFace(event)">📡 周囲をスキャン</button>
+        <button class="action-btn" onclick="speakFace(event)">🔊 状況を読み上げる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- お金を識別 -->
+  <div class="feat-card" id="card-money" onclick="toggleCard('money')">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--amber-bg)">💴</div>
+      <div><div class="feat-name">お金を識別</div><div class="feat-desc">紙幣・硬貨を判定して合計を計算</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <div class="money-items" id="money-items">
+          <div class="money-item"><div class="bill-label" style="background:var(--green-bg);color:var(--green)">1万円</div><div class="bill-count">× 1枚</div></div>
+          <div class="money-item"><div class="bill-label" style="background:var(--accent-bg);color:var(--accent)">千円</div><div class="bill-count">× 2枚</div></div>
+          <div class="money-item"><div class="bill-label" style="background:var(--surface2);color:var(--text2)">500円</div><div class="bill-count">× 3枚</div></div>
+        </div>
+        <div class="money-total-row">
+          <div class="money-total-label">合計</div>
+          <div class="money-total-val" id="money-total">¥13,500</div>
+        </div>
+        <button class="action-btn primary" onclick="scanMoney(event)">📷 お金を撮影して識別</button>
+        <div class="btn-row">
+          <button class="action-btn" onclick="speakMoney(event)">🔊 合計を読み上げる</button>
+          <button class="action-btn" onclick="resetMoney(event)">リセット</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 危険を検知 -->
+  <div class="feat-card" id="card-danger" onclick="toggleCard('danger')">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--red-bg)">⚠️</div>
+      <div><div class="feat-name">危険を検知</div><div class="feat-desc">段差・障害物をリアルタイム警告</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <div class="danger-list" id="danger-list">
+          <div class="danger-item" style="background:var(--red-bg)"><div class="danger-icon pulse">🚨</div><div class="danger-text" style="color:var(--red)">前方80cmに段差あり（高さ約15cm）</div></div>
+          <div class="danger-item" style="background:var(--amber-bg)"><div class="danger-icon">🚧</div><div class="danger-text" style="color:var(--amber)">左側に工事中の柵（約1.5m先）</div></div>
+          <div class="danger-item" style="background:var(--green-bg)"><div class="danger-icon">✅</div><div class="danger-text" style="color:var(--green)">正面・右側は安全です</div></div>
+        </div>
+        <button class="action-btn primary" onclick="scanDanger(event)">🔍 危険をスキャン</button>
+        <div class="btn-row">
+          <button class="action-btn" id="monitor-btn" onclick="toggleMonitor(event)">常時監視 OFF</button>
+          <button class="action-btn" onclick="testVibrate(event)">📳 振動テスト</button>
+        </div>
+        <div class="monitor-badge off" id="monitor-badge">⬤ 常時監視 停止中</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 点字 -->
+  <div class="feat-card" id="card-braille" onclick="toggleCard('braille')">
+    <div class="feat-header">
+      <div class="feat-icon-wrap" style="background:var(--purple-bg)">⠿</div>
+      <div><div class="feat-name">点字サポート</div><div class="feat-desc">テキスト変換・点字認識・学習</div></div>
+      <div class="feat-chevron">›</div>
+    </div>
+    <div class="feat-body">
+      <div class="feat-body-inner">
+        <input class="braille-input" id="braille-input" placeholder="日本語・英語を入力…" value="こんにちは" oninput="convertBraille(this.value)">
+        <div class="braille-display" id="braille-out"></div>
+        <div class="btn-row">
+          <button class="action-btn primary" onclick="speakBraille(event)">🔊 音声で読む</button>
+          <button class="action-btn" onclick="scanBraille(event)">📷 点字を読む</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /feat-grid -->
+</div><!-- /panel-home -->
+
+<!-- 履歴パネル -->
+<div id="panel-history" style="display:none;padding:16px 16px 100px">
+  <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">使用履歴</div>
+  <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div id="history-empty" style="color:var(--text3);font-size:14px;text-align:center;padding:48px 0">まだ履歴がありません</div>
+</div>
+
+<!-- 設定パネル -->
+<div id="panel-settings" style="display:none;padding:16px 16px 100px">
+  <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">設定</div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">🔊 音声</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:var(--text2)">読み上げ速度</span>
+        <div style="display:flex;gap:6px">
+          <button id="spd-slow" onclick="setSpeed(0.7,this)" style="padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">遅い</button>
+          <button id="spd-normal" onclick="setSpeed(0.95,this)" style="padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--accent);color:#fff;font-size:12px;cursor:pointer;font-family:inherit">普通</button>
+          <button id="spd-fast" onclick="setSpeed(1.3,this)" style="padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">速い</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--text2)">読み上げテスト</span>
+        <button onclick="speak('これはみるAIの音声テストです。聞こえていますか？')" style="padding:5px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">▶ テスト</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">📳 振動（Android専用）</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--text2)">危険検知時に振動する</span>
+        <div onclick="toggleVib()" style="width:46px;height:26px;border-radius:99px;background:var(--accent);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0" id="vib-track">
+          <div id="vib-thumb" style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:22px;transition:left .2s"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">🔤 文字サイズ</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="setSize('small')" id="sz-small" style="flex:1;padding:8px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">小</button>
+        <button onclick="setSize('medium')" id="sz-medium" style="flex:1;padding:8px;border-radius:6px;border:0.5px solid var(--border);background:var(--accent);color:#fff;font-size:15px;cursor:pointer;font-family:inherit">中</button>
+        <button onclick="setSize('large')" id="sz-large" style="flex:1;padding:8px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:18px;cursor:pointer;font-family:inherit">大</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">ℹ️ このアプリについて</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">みるAI — 視覚サポートアシスタント<br>バージョン 1.0.0　福祉施設・支援団体向け</div>
+      <button onclick="clearHistory()" style="margin-top:12px;width:100%;padding:10px;border-radius:var(--radius-sm);border:0.5px solid rgba(248,113,113,0.3);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:inherit">🗑　履歴をすべて削除</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+    <div class="nav-item-icon">🏠</div><div class="nav-item-label">ホーム</div>
+  </div>
+  <div class="nav-item" id="nav-history" onclick="switchTab('history')">
+    <div class="nav-item-icon">📜</div><div class="nav-item-label">履歴</div>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
+    <div class="nav-item-icon">⚙️</div><div class="nav-item-label">設定</div>
+  </div>
+</div>
+
+<script>
+const KANA = {
+  'あ':[[1,0],[0,0],[0,0]],'い':[[0,1],[1,0],[0,0]],'う':[[1,1],[0,0],[0,0]],
+  'え':[[1,1],[0,1],[0,0]],'お':[[1,0],[0,1],[0,0]],
+  'か':[[1,0],[0,0],[1,0]],'き':[[0,1],[1,0],[1,0]],'く':[[1,1],[0,0],[1,0]],
+  'け':[[1,1],[0,1],[1,0]],'こ':[[1,0],[0,1],[1,0]],
+  'さ':[[1,0],[1,0],[0,0]],'し':[[0,1],[1,1],[0,0]],'す':[[1,1],[1,0],[0,0]],
+  'せ':[[1,1],[1,1],[0,0]],'そ':[[1,0],[1,1],[0,0]],
+  'た':[[1,0],[1,0],[1,0]],'ち':[[0,1],[1,1],[1,0]],'つ':[[1,1],[1,0],[1,0]],
+  'て':[[1,1],[1,1],[1,0]],'と':[[1,0],[1,1],[1,0]],
+  'な':[[1,0],[0,0],[0,1]],'に':[[0,1],[1,0],[0,1]],'ぬ':[[1,1],[0,0],[0,1]],
+  'ね':[[1,1],[0,1],[0,1]],'の':[[1,0],[0,1],[0,1]],
+  'は':[[1,0],[1,0],[0,1]],'ひ':[[0,1],[1,1],[0,1]],'ふ':[[1,1],[1,0],[0,1]],
+  'へ':[[1,1],[1,1],[0,1]],'ほ':[[1,0],[1,1],[0,1]],
+  'ま':[[1,0],[0,0],[1,1]],'み':[[0,1],[1,0],[1,1]],'む':[[1,1],[0,0],[1,1]],
+  'め':[[1,1],[0,1],[1,1]],'も':[[1,0],[0,1],[1,1]],
+  'や':[[1,0],[1,0],[1,1]],'ゆ':[[1,1],[1,0],[1,1]],'よ':[[1,0],[1,1],[1,1]],
+  'ら':[[0,1],[0,0],[1,0]],'り':[[0,1],[0,1],[1,0]],'る':[[0,1],[0,0],[1,1]],
+  'れ':[[0,1],[0,1],[1,1]],'ろ':[[0,1],[0,1],[0,1]],
+  'わ':[[0,1],[0,0],[0,1]],'を':[[0,1],[0,1],[0,0]],'ん':[[0,0],[1,0],[1,1]],
+  ' ':[[0,0],[0,0],[0,0]]
+};
+const ENG = {
+  'a':[[1,0],[0,0],[0,0]],'b':[[1,0],[1,0],[0,0]],'c':[[1,1],[0,0],[0,0]],
+  'd':[[1,1],[0,1],[0,0]],'e':[[1,0],[0,1],[0,0]],'f':[[1,1],[1,0],[0,0]],
+  'g':[[1,1],[1,1],[0,0]],'h':[[1,0],[1,1],[0,0]],'i':[[0,1],[1,0],[0,0]],
+  'j':[[0,1],[1,1],[0,0]],'k':[[1,0],[0,0],[1,0]],'l':[[1,0],[1,0],[1,0]],
+  'm':[[1,1],[0,0],[1,0]],'n':[[1,1],[0,1],[1,0]],'o':[[1,0],[0,1],[1,0]],
+  'p':[[1,1],[1,0],[1,0]],'q':[[1,1],[1,1],[1,0]],'r':[[1,0],[1,1],[1,0]],
+  's':[[0,1],[1,0],[1,0]],'t':[[0,1],[1,1],[1,0]],'u':[[1,0],[0,0],[1,1]],
+  'v':[[1,0],[1,0],[1,1]],'w':[[0,1],[1,1],[0,1]],'x':[[1,1],[0,0],[1,1]],
+  'y':[[1,1],[0,1],[1,1]],'z':[[1,0],[0,1],[1,1]],' ':[[0,0],[0,0],[0,0]]
+};
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+
+function setResult(text, active=true) {
+  const box = document.getElementById('main-result');
+  const el = document.getElementById('main-text');
+  el.textContent = text;
+  el.className = 'result-text';
+  box.className = active ? 'result-box active' : 'result-box';
+}
+
+function showListening(show) {
+  document.getElementById('listening').className = show ? 'listening show' : 'listening';
+}
+
+function heroScan() {
+  showListening(true);
+  setResult('解析中…');
+  setTimeout(() => {
+    showListening(false);
+    const msg = '前方に横断歩道があります。信号は青です。右手にコンビニエンスストアの看板が見えます。歩行者は3名います。障害物はありません。安全に進めます。';
+    setResult(msg);
+    speak(msg);
+  }, 2000);
+}
+
+function toggleCard(id) {
+  const card = document.getElementById('card-'+id);
+  const wasOpen = card.classList.contains('active');
+  document.querySelectorAll('.feat-card').forEach(c => c.classList.remove('active'));
+  if (!wasOpen) card.classList.add('active');
+}
+
+// Nav
+let navTimer = null;
+const NAV_MSGS = [
+  '直進20メートルです。歩道は広く安全です。',
+  'あと10メートルで交差点です。信号は青です。',
+  '角を右折してください。次の目的地まで残り50メートル。',
+  '目的地に到着しました。右手に入口があります。'
+];
+let navStep = 0;
+function startNav(e) {
+  e.stopPropagation();
+  navStep = 0;
+  if (navTimer) clearInterval(navTimer);
+  speak(NAV_MSGS[0]);
+  setResult(NAV_MSGS[0]);
+  navTimer = setInterval(() => {
+    navStep++;
+    if (navStep >= NAV_MSGS.length) { clearInterval(navTimer); return; }
+    speak(NAV_MSGS[navStep]);
+    setResult(NAV_MSGS[navStep]);
+  }, 4000);
+}
+function navAlert(e, type) {
+  e.stopPropagation();
+  const msgs = {
+    step: '注意してください。前方3メートルに段差があります。高さは約15センチです。',
+    signal: '信号情報：現在、青信号です。渡れます。残り約15秒です。',
+    arrive: '目的地に到着しました。お疲れ様でした。'
+  };
+  speak(msgs[type]); setResult(msgs[type]);
+}
+
+// Color
+let currentColorName = '紺色（ネイビー）';
+function pickColor(e, el, name, detail) {
+  e.stopPropagation();
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+  currentColorName = name;
+  document.getElementById('color-name').textContent = name;
+  document.getElementById('color-detail').textContent = detail;
+}
+function scanColor(e) {
+  e.stopPropagation();
+  document.getElementById('color-name').textContent = '解析中…';
+  document.getElementById('color-detail').textContent = 'カメラで色を識別しています';
+  setTimeout(() => {
+    const n = 'ベージュ（薄茶色）'; const d = 'やわらかい暖色系の色。トレンチコートやバッグに多い色です。';
+    document.getElementById('color-name').textContent = n;
+    document.getElementById('color-detail').textContent = d;
+    currentColorName = n; speak(n);
+  }, 1500);
+}
+function speakColor(e) { e.stopPropagation(); speak(currentColorName); }
+
+// Face
+const FACE_SCENARIOS = [
+  { people: [['😊','笑顔','正面・約1m'],['😐','無表情','右・約2m']], msg: '2名を検出。正面の方が笑顔で近づいています。声かけできる距離です。' },
+  { people: [['😄','笑顔','正面・約1m'],['😌','穏やか','左・約2m'],['😕','困惑','後・約3m'],['😊','笑顔','右・約4m']], msg: '4名を検出。正面と右の方が笑顔です。後方の方が少し困惑した表情をしています。' },
+  { people: [], msg: '周囲に人はいません。' }
+];
+let faceIdx = 0;
+function scanFace(e) {
+  e.stopPropagation();
+  showListening(true);
+  setTimeout(() => {
+    showListening(false);
+    const s = FACE_SCENARIOS[faceIdx % FACE_SCENARIOS.length]; faceIdx++;
+    const grid = document.getElementById('person-grid');
+    if (s.people.length === 0) {
+      grid.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0">人は検出されませんでした</div>';
+    } else {
+      grid.innerHTML = s.people.map(p => `<div class="person-card"><div class="p-avatar" style="background:var(--surface)">${p[0]}</div><div class="p-emotion">${p[1]}</div><div class="p-dist">${p[2]}</div></div>`).join('');
+    }
+    document.getElementById('face-result').innerHTML = '<div class="color-detail">'+s.msg+'</div>';
+    speak(s.msg); setResult(s.msg);
+  }, 1800);
+}
+function speakFace(e) {
+  e.stopPropagation();
+  const t = document.getElementById('face-result').textContent;
+  speak(t);
+}
+
+// Money
+const MONEY_SETS = [
+  { items:[['1万円','var(--green-bg)','var(--green)','× 1枚'],['千円','var(--accent-bg)','var(--accent)','× 2枚'],['500円','var(--surface2)','var(--text2)','× 3枚']], total:'¥13,500', speak:'合計、1万3千500円です。' },
+  { items:[['5千円','var(--amber-bg)','var(--amber)','× 1枚'],['百円','var(--surface2)','var(--text2)','× 5枚'],['10円','var(--surface2)','var(--text3)','× 3枚']], total:'¥5,530', speak:'合計、5千530円です。' },
+  { items:[['千円','var(--accent-bg)','var(--accent)','× 3枚']], total:'¥3,000', speak:'合計、3千円です。' }
+];
+let moneyIdx = 0;
+function scanMoney(e) {
+  e.stopPropagation();
+  document.getElementById('money-total').textContent = '計算中…';
+  showListening(true);
+  setTimeout(() => {
+    showListening(false);
+    const s = MONEY_SETS[moneyIdx % MONEY_SETS.length]; moneyIdx++;
+    document.getElementById('money-items').innerHTML = s.items.map(i =>
+      `<div class="money-item"><div class="bill-label" style="background:${i[1]};color:${i[2]}">${i[0]}</div><div class="bill-count">${i[3]}</div></div>`
+    ).join('');
+    document.getElementById('money-total').textContent = s.total;
+    speak(s.speak); setResult(s.speak);
+  }, 1500);
+}
+function speakMoney(e) { e.stopPropagation(); const t = document.getElementById('money-total').textContent; speak(t+'です。'); }
+function resetMoney(e) { e.stopPropagation(); document.getElementById('money-total').textContent = '¥0'; }
+
+// Danger
+const DANGER_SETS = [
+  [
+    {bg:'var(--red-bg)',color:'var(--red)',icon:'🚨',text:'前方80cmに段差あり（高さ約15cm）',pulse:true},
+    {bg:'var(--amber-bg)',color:'var(--amber)',icon:'🚧',text:'左側に工事中の柵（約1.5m先）'},
+    {bg:'var(--green-bg)',color:'var(--green)',icon:'✅',text:'正面・右側は安全です'}
+  ],
+  [
+    {bg:'var(--amber-bg)',color:'var(--amber)',icon:'💧',text:'床が濡れています。滑りやすい状態です'},
+    {bg:'var(--amber-bg)',color:'var(--amber)',icon:'🚪',text:'自動ドアが前方1mにあります'},
+    {bg:'var(--green-bg)',color:'var(--green)',icon:'✅',text:'左右の通路は確保されています'}
+  ],
+  [
+    {bg:'var(--green-bg)',color:'var(--green)',icon:'✅',text:'前方5m先まで障害物なし'},
+    {bg:'var(--green-bg)',color:'var(--green)',icon:'✅',text:'左右も安全です'},
+    {bg:'var(--green-bg)',color:'var(--green)',icon:'✅',text:'周囲に危険は検出されませんでした'}
+  ]
+];
+let dangerIdx = 0;
+let monitoring = false;
+let monitorTimer = null;
+function renderDanger(set) {
+  document.getElementById('danger-list').innerHTML = set.map(d =>
+    `<div class="danger-item" style="background:${d.bg}"><div class="danger-icon${d.pulse?' pulse':''}">${d.icon}</div><div class="danger-text" style="color:${d.color}">${d.text}</div></div>`
+  ).join('');
+}
+function scanDanger(e) {
+  e.stopPropagation();
+  const set = DANGER_SETS[dangerIdx % DANGER_SETS.length]; dangerIdx++;
+  renderDanger(set);
+  const msg = set[0].text;
+  speak(msg); setResult(msg);
+  if (set[0].color === 'var(--red)' && 'vibrate' in navigator) navigator.vibrate([300,100,300]);
+}
+function toggleMonitor(e) {
+  e.stopPropagation();
+  monitoring = !monitoring;
+  document.getElementById('monitor-btn').textContent = '常時監視 ' + (monitoring ? 'ON' : 'OFF');
+  const badge = document.getElementById('monitor-badge');
+  badge.className = monitoring ? 'monitor-badge' : 'monitor-badge off';
+  badge.textContent = monitoring ? '⬤ 常時監視 稼働中' : '⬤ 常時監視 停止中';
+  if (monitoring) {
+    monitorTimer = setInterval(() => scanDanger({stopPropagation:()=>{}}), 5000);
+  } else {
+    clearInterval(monitorTimer);
+  }
+}
+function testVibrate(e) {
+  e.stopPropagation();
+  if ('vibrate' in navigator) navigator.vibrate([200,100,200,100,200]);
+  speak('振動テストです。');
+}
+
+// Braille
+function makeBrailleCell(pat, ch) {
+  const wrap = document.createElement('div'); wrap.className = 'b-cell';
+  for (let r=0;r<3;r++){
+    const row = document.createElement('div'); row.className = 'b-row';
+    for (let c=0;c<2;c++){
+      const d = document.createElement('div');
+      d.className = 'b-dot ' + (pat[r][c] ? 'on' : 'off');
+      row.appendChild(d);
+    }
+    wrap.appendChild(row);
+  }
+  const lbl = document.createElement('div'); lbl.className = 'b-lbl'; lbl.textContent = ch === ' ' ? '□' : ch;
+  wrap.appendChild(lbl);
+  return wrap;
+}
+function convertBraille(text) {
+  const out = document.getElementById('braille-out'); out.innerHTML = '';
+  const chars = [...text.toLowerCase().slice(0,14)];
+  let any = false;
+  chars.forEach(ch => {
+    const pat = KANA[ch] || ENG[ch];
+    if (!pat) return;
+    out.appendChild(makeBrailleCell(pat, ch)); any = true;
+  });
+  if (!any) out.innerHTML = '<span style="color:var(--text3);font-size:12px">テキストを入力してください</span>';
+}
+function speakBraille(e) { e.stopPropagation(); speak(document.getElementById('braille-input').value || 'テキストがありません'); }
+function scanBraille(e) {
+  e.stopPropagation();
+  showListening(true);
+  setTimeout(() => {
+    showListening(false);
+    const msg = 'この先、エレベーターは右方向です。';
+    document.getElementById('braille-input').value = msg;
+    convertBraille(msg); speak(msg); setResult('点字認識：' + msg);
+  }, 2000);
+}
+
+
+// ── GPS ナビゲーション ──
+let gpsWatchId = null;
+let currentPos = null;
+let destPos = null;
+let navActive = false;
+let lastSpokenDist = null;
+
+function deg2rad(d) { return d * Math.PI / 180; }
+
+function calcDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function calcBearing(lat1, lon1, lat2, lon2) {
+  const dLon = deg2rad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(deg2rad(lat2));
+  const x = Math.cos(deg2rad(lat1))*Math.sin(deg2rad(lat2)) - Math.sin(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function bearingToArrow(b) {
+  if (b < 22.5 || b >= 337.5) return '⬆️';
+  if (b < 67.5) return '↗️';
+  if (b < 112.5) return '➡️';
+  if (b < 157.5) return '↘️';
+  if (b < 202.5) return '⬇️';
+  if (b < 247.5) return '↙️';
+  if (b < 292.5) return '⬅️';
+  return '↖️';
+}
+
+function formatDist(m) {
+  if (m < 1000) return Math.round(m) + 'm';
+  return (m / 1000).toFixed(1) + 'km';
+}
+
+function updateNavDisplay(pos) {
+  currentPos = pos;
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+  const acc = Math.round(pos.coords.accuracy);
+
+  document.getElementById('gps-status').innerHTML =
+    '📍 現在地取得中 (精度±' + acc + 'm)';
+
+  if (!navActive || !destPos) return;
+
+  const dist = calcDistance(lat, lon, destPos.lat, destPos.lon);
+  const bearing = calcBearing(lat, lon, destPos.lat, destPos.lon);
+  const arrow = bearingToArrow(bearing);
+
+  document.getElementById('nav-direction-box').style.display = 'block';
+  document.getElementById('nav-arrow').textContent = arrow;
+  document.getElementById('nav-distance').textContent = formatDist(dist);
+
+  if (dist < 30) {
+    document.getElementById('nav-instruction').textContent = '目的地に到着しました！';
+    speak('目的地に到着しました。お疲れ様でした。');
+    stopGpsNav({stopPropagation:()=>{}});
+    return;
+  }
+
+  document.getElementById('nav-instruction').textContent =
+    '目的地まで ' + formatDist(dist) + ' (' + Math.round(bearing) + '°)';
+
+  // 100m刻みで読み上げ
+  const roundDist = Math.round(dist / 100) * 100;
+  if (lastSpokenDist === null || Math.abs(lastSpokenDist - roundDist) >= 100) {
+    lastSpokenDist = roundDist;
+    speak(formatDist(dist) + '先が目的地です。' + bearingToWords(bearing) + '方向に進んでください。');
+  }
+}
+
+function bearingToWords(b) {
+  if (b < 22.5 || b >= 337.5) return '正面';
+  if (b < 67.5) return '右斜め前';
+  if (b < 112.5) return '右';
+  if (b < 157.5) return '右斜め後ろ';
+  if (b < 202.5) return '後ろ';
+  if (b < 247.5) return '左斜め後ろ';
+  if (b < 292.5) return '左';
+  return '左斜め前';
+}
+
+function geocodeAddress(address, callback) {
+  const url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(address + ' 日本') + '&format=json&limit=1';
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.length > 0) {
+        callback({ lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), name: data[0].display_name });
+      } else {
+        callback(null);
+      }
+    })
+    .catch(() => callback(null));
+}
+
+function startGpsNav(e) {
+  e.stopPropagation();
+  const dest = document.getElementById('nav-dest').value.trim();
+  if (!dest) { speak('目的地を入力してください'); return; }
+
+  document.getElementById('gps-status').innerHTML = '📍 現在地を取得中…';
+  speak('ナビを開始します。目的地「' + dest + '」を検索中です。');
+  setResult('ナビ開始：' + dest + ' を検索中…');
+
+  geocodeAddress(dest, function(result) {
+    if (!result) {
+      document.getElementById('gps-status').innerHTML = '⚠️ 目的地が見つかりませんでした';
+      speak('目的地が見つかりませんでした。別の名前で試してください。');
+      return;
+    }
+
+    destPos = result;
+    navActive = true;
+    lastSpokenDist = null;
+
+    const shortName = dest;
+    document.getElementById('nav-route-info').style.display = 'block';
+    document.getElementById('nav-route-text').textContent = '目的地：' + shortName;
+    document.getElementById('nav-stop-btn').style.display = 'block';
+
+    // Google Maps リンク
+    document.getElementById('maps-link-box').style.display = 'block';
+    document.getElementById('maps-link').href =
+      'https://www.google.com/maps/dir/?api=1&destination=' + destPos.lat + ',' + destPos.lon + '&travelmode=walking';
+
+    if (!navigator.geolocation) {
+      speak('このデバイスはGPSに対応していません。Google マップをご利用ください。');
+      return;
+    }
+
+    if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+
+    gpsWatchId = navigator.geolocation.watchPosition(
+      updateNavDisplay,
+      function(err) {
+        document.getElementById('gps-status').innerHTML = '⚠️ GPS取得エラー：位置情報の許可を確認してください';
+        speak('GPS情報を取得できませんでした。位置情報の許可を確認してください。');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  });
+}
+
+function stopGpsNav(e) {
+  e.stopPropagation();
+  navActive = false;
+  if (gpsWatchId) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+  document.getElementById('nav-stop-btn').style.display = 'none';
+  document.getElementById('nav-direction-box').style.display = 'none';
+  document.getElementById('gps-status').innerHTML = '📍 ナビを停止しました';
+  speak('ナビを停止しました。');
+}
+
+function speakCurrentLocation(e) {
+  e.stopPropagation();
+  if (!navigator.geolocation) { speak('GPSに対応していません'); return; }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude.toFixed(5);
+    const lon = pos.coords.longitude.toFixed(5);
+    const acc = Math.round(pos.coords.accuracy);
+    const msg = '現在地：緯度' + lat + '、経度' + lon + '。精度は約' + acc + 'メートルです。';
+    speak(msg);
+    setResult(msg);
+    document.getElementById('gps-status').innerHTML = '📍 緯度:' + lat + ' 経度:' + lon + ' (精度±' + acc + 'm)';
+  }, function() {
+    speak('現在地を取得できません。位置情報の許可を確認してください。');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function openGoogleMaps(e) {
+  e.stopPropagation();
+  const dest = document.getElementById('nav-dest').value.trim();
+  if (!dest) {
+    window.open('https://www.google.com/maps', '_blank');
+    return;
+  }
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest) + '&travelmode=walking';
+  window.open(url, '_blank');
+}
+
+
+// ── TalkBack・アクセシビリティ ──
+let largeMode = false;
+let ariaMode = true;
+
+function toggleLargeMode() {
+  largeMode = !largeMode;
+  document.body.classList.toggle('large-mode', largeMode);
+  document.getElementById('large-track').style.background = largeMode ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('large-thumb').style.left = largeMode ? '22px' : '2px';
+  speak(largeMode ? '大きいボタンモードをONにしました' : '大きいボタンモードをOFFにしました');
+}
+
+function toggleAriaMode() {
+  ariaMode = !ariaMode;
+  document.getElementById('aria-track').style.background = ariaMode ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('aria-thumb').style.left = ariaMode ? '22px' : '2px';
+  const el = document.getElementById('main-result');
+  el.setAttribute('aria-live', ariaMode ? 'polite' : 'off');
+  speak(ariaMode ? 'TalkBack読み上げをONにしました' : 'TalkBack読み上げをOFFにしました');
+}
+
+function testTalkback() {
+  const msg = 'みるAIの読み上げテストです。この音声が聞こえていれば正常に動作しています。';
+  // aria-liveで読み上げ（TalkBack対応）
+  const el = document.getElementById('main-result');
+  const textEl = document.getElementById('main-text');
+  textEl.textContent = msg;
+  textEl.className = 'result-text';
+  el.className = 'result-box active';
+  // Web Speech APIも試みる
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(msg);
+    u.lang = 'ja-JP'; u.rate = speechRate || 0.95;
+    speechSynthesis.speak(u);
+  }
+}
+
+// setResultをTalkBack対応に上書き
+const _setResultOrig = setResult;
+function setResult(text, active=true) {
+  const box = document.getElementById('main-result');
+  const el = document.getElementById('main-text');
+  // aria-liveで変更を通知（TalkBackが自動読み上げ）
+  el.textContent = '';
+  setTimeout(() => {
+    el.textContent = text;
+    el.className = 'result-text';
+    box.className = active ? 'result-box active' : 'result-box';
+  }, 50);
+  // Web Speech APIも試みる
+  if ('speechSynthesis' in window && text && text !== '解析中…') {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = speechRate || 0.95;
+    // ユーザー操作後のみ再生（autoplay制限対策）
+    try { speechSynthesis.speak(u); } catch(e) {}
+  }
+}
+
+// ナビゲーションのaria-expanded更新
+const _origToggleCard = toggleCard;
+function toggleCard(id) {
+  _origToggleCard(id);
+  document.querySelectorAll('.feat-card').forEach(card => {
+    const isOpen = card.classList.contains('active');
+    card.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+}
+
+// 初回タップで音声を有効化（autoplay制限対策）
+document.addEventListener('click', function initAudio() {
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance('');
+    speechSynthesis.speak(u);
+  }
+  document.removeEventListener('click', initAudio);
+}, { once: true });
+
+convertBraille('こんにちは');
+
+// ── タブ切り替え ──
+function switchTab(tab) {
+  document.getElementById('panel-home').style.display    = tab === 'home'     ? 'block' : 'none';
+  document.getElementById('panel-history').style.display = tab === 'history'  ? 'block' : 'none';
+  document.getElementById('panel-settings').style.display= tab === 'settings' ? 'block' : 'none';
+  ['home','history','settings'].forEach(t => {
+    document.getElementById('nav-'+t).className = 'nav-item' + (t === tab ? ' active' : '');
+  });
+  if (tab === 'history') renderHistory();
+}
+
+// ── 履歴 ──
+let histLog = [];
+try { histLog = JSON.parse(localStorage.getItem('miruai_hist') || '[]'); } catch(e) {}
+function addHistory(label, text) {
+  const now = new Date();
+  const hm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  histLog.unshift({ label, text, hm });
+  if (histLog.length > 40) histLog.pop();
+  try { localStorage.setItem('miruai_hist', JSON.stringify(histLog)); } catch(e) {}
+}
+function renderHistory() {
+  const list  = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  if (histLog.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = histLog.map(h => `
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:12px;font-weight:600;color:var(--accent)">${h.label}</span>
+        <span style="font-size:11px;color:var(--text3)">${h.hm}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5">${h.text}</div>
+    </div>`).join('');
+}
+function clearHistory() {
+  if (!confirm('履歴をすべて削除しますか？')) return;
+  histLog = [];
+  try { localStorage.removeItem('miruai_hist'); } catch(e) {}
+  renderHistory();
+}
+
+// 各機能から履歴に記録
+const _origSetResult = setResult;
+function setResult(text, active=true) {
+  const box = document.getElementById('main-result');
+  const el  = document.getElementById('main-text');
+  el.textContent = text;
+  el.className = 'result-text';
+  box.className = active ? 'result-box active' : 'result-box';
+}
+
+// ── 設定：音声速度 ──
+let speechRate = 0.95;
+function setSpeed(rate, btn) {
+  speechRate = rate;
+  ['spd-slow','spd-normal','spd-fast'].forEach(id => {
+    document.getElementById(id).style.background = 'var(--surface2)';
+    document.getElementById(id).style.color = 'var(--text2)';
+  });
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#fff';
+}
+
+// ── 設定：振動 ──
+let vibEnabled = true;
+function toggleVib() {
+  vibEnabled = !vibEnabled;
+  document.getElementById('vib-track').style.background = vibEnabled ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('vib-thumb').style.left = vibEnabled ? '22px' : '2px';
+}
+
+// ── 設定：文字サイズ ──
+const sizeMap = { small: '13px', medium: '15px', large: '19px' };
+function setSize(s) {
+  document.body.style.fontSize = sizeMap[s];
+  ['small','medium','large'].forEach(k => {
+    const btn = document.getElementById('sz-'+k);
+    btn.style.background = k === s ? 'var(--accent)' : 'var(--surface2)';
+    btn.style.color = k === s ? '#fff' : 'var(--text2)';
+  });
+}
+
+// speak を速度設定に対応させる（再定義）
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; u.rate = speechRate;
+  speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>
